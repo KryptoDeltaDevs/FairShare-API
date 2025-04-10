@@ -1,0 +1,12 @@
+---
+- name: "Roommates"
+  description: "Group for splitting rent and utilities each month."
+
+- name: "Family Plan"
+  description: "Shared group for Netflix and grocery bills."
+
+- name: "Startup Team"
+  description: "For managing shared SaaS tools and domain expenses."
+
+- name: "Graduation Trip"
+  description: "Coordinating shared travel expenses and group purchases."
