@@ -10,10 +10,10 @@ module FairShare
   # Group detail
   class Group
     def initialize(new_group)
-      @id = new_id
+      @id = new_group['id'] || new_id
       @name = new_group['name']
       @description = new_group['description']
-      @created_at = Time.now
+      @created_at = new_group['created_at'] || Time.now
     end
 
     attr_reader :id, :name, :description, :created_at
