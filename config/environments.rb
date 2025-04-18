@@ -11,7 +11,7 @@ module FairShare
 
     Figaro.application = Figaro::Application.new(
       environment: environment,
-      path: File.expand_path('config/secrets-example.yml')
+      path: File.expand_path('config/secrets.yml')
     )
     Figaro.load
 

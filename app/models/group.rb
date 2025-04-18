@@ -19,7 +19,7 @@ module FairShare
               id:,
               name:,
               description:,
-              created_by: nil,
+              created_by:,
               created_at:,
               updated_at:
             }

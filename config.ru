@@ -1,4 +1,6 @@
 # frozen_string_literal: true
 
-require_relative 'app/controllers/app'
+require_relative 'require_app'
+require_app
+
 run FairShare::Api.freeze.app
