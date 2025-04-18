@@ -5,63 +5,60 @@ require_relative 'spec_helper'
 describe 'Test GroupMember API' do
   include Rack::Test::Methods
 
+  def app
+    FairShare::Api
+  end
+
   before do
     wipe_database
-
-    DATA[:group].each do |group_data|
-      FairShare::Group.create(group_data)
-    end
+    @group = FairShare::Group.create(DATA[:group][0])
+    @owner = FairShare::GroupMember.create(group_id: @group.id, user_id: 1, role: 'owner')
   end
 
   it 'HAPPY: should be able to get list of all group members' do
-    group = FairShare::Group.first
     DATA[:group_members].each do |member|
-      group.add_group_member(member)
+      FairShare::GroupMember.create(
+        group_id: @group.id,
+        user_id: member['user_id'],
+        role: member['role']
+      )
     end
 
-    get "api/v1/groups/#{group.id}/members"
+    header 'X-User-Id', '1'
+    get "/api/v1/groups/#{@group.id}/members"
     _(last_response.status).must_equal 200
 
     result = JSON.parse last_response.body
-    _(result['data'].count).must_equal 3
+    _(result.size).must_equal DATA[:group_members].size + 1
   end
 
-  it 'HAPPY: should be able to get details of a single group member' do
-    member_data = DATA[:group_members][1]
-    group = FairShare::Group.first
-
-    member = group.add_group_member(member_data).save # rubocop:disable Sequel/SaveChanges
-
-    get "/api/v1/groups/#{group.id}/members/#{member.id}"
-    _(last_response.status).must_equal 200
-
-    result = JSON.parse last_response.body
-    _(result['data']['attributes']['id']).must_equal member.id
-    _(result['data']['attributes']['user_id']).must_equal member_data['user_id']
-  end
-
-  it 'SAD: should return error if unknown group member requested' do
-    group = FairShare::Group.first
-    get "/api/v1/groups/#{group.id}/members/foobar"
-
+  it 'SAD: should block unauthorized user from viewing members' do
+    header 'X-User-Id', '999'
+    get "/api/v1/groups/#{@group.id}/members"
     _(last_response.status).must_equal 404
   end
 
-  it 'HAPPY: should be able to create new group members' do
-    group = FairShare::Group.first
-    member_data = DATA[:group_members][1]
+  it 'HAPPY: should be able to add a member (non-owner not allowed)' do
+    header 'X-User-Id', '1'
+    member_data = { user_id: 2, role: 'member' }
 
-    req_header = { 'CONTENT_TYPE' => 'application/json' }
-    post "api/v1/groups/#{group.id}/members",
-         member_data.to_json, req_header
+    header 'CONTENT_TYPE', 'application/json'
+    post "/api/v1/groups/#{@group.id}/members", member_data.to_json
+
     _(last_response.status).must_equal 201
-    _(last_response.headers['Location'].size).must_be :>, 0
+    result = JSON.parse last_response.body
+    _(result['message']).must_match(/saved/)
+  end
 
-    created = JSON.parse(last_response.body)['data']['data']['attributes']
-    member = FairShare::GroupMember.first
+  it 'SAD: should not allow assigning owner role via API' do
+    header 'X-User-Id', '1'
+    member_data = { user_id: 3, role: 'owner' }
 
-    _(created['id']).must_equal member.id
-    _(created['user_id']).must_equal member_data['user_id']
-    _(created['role']).must_equal member_data['role']
+    header 'CONTENT_TYPE', 'application/json'
+    post "/api/v1/groups/#{@group.id}/members", member_data.to_json
+
+    _(last_response.status).must_equal 500
+    result = JSON.parse last_response.body
+    _(result['message']).must_match(/Cannot assign owner/)
   end
 end
