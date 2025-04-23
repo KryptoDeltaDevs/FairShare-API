@@ -7,8 +7,11 @@ module FairShare
   # Group detail
   class Group < Sequel::Model
     one_to_many :group_members
+    plugin :association_dependencies, group_members: :destroy
 
     plugin :timestamps, update_on_create: true
+    plugin :whitelist_security
+    set_allowed_columns :name, :description
 
     def to_json(options = {}) # rubocop:disable Metrics/MethodLength
       JSON(
