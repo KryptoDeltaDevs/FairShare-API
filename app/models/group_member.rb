@@ -8,7 +8,12 @@ module FairShare
   class GroupMember < Sequel::Model
     many_to_one :group
 
+    plugin :uuid, field: :id
     plugin :timestamps, update_on_create: true
+    plugin :whitelist_security
+    set_allowed_columns :role
+
+    # Secure getters and setters(I'm wondering which should we need to encrypt?)
 
     def to_json(options = {}) # rubocop:disable Metrics/MethodLength
       JSON(
