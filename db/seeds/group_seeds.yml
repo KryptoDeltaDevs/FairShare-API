@@ -1,16 +1,12 @@
 ---
 - name: "Roommates"
   description: "Group for splitting rent and utilities each month."
-  created_by: 1
 
 - name: "Family Plan"
   description: "Shared group for Netflix and grocery bills."
-  created_by: 2
 
 - name: "Startup Team"
   description: "For managing shared SaaS tools and domain expenses."
-  created_by: 3
 
 - name: "Graduation Trip"
   description: "Coordinating shared travel expenses and group purchases."
-  created_by: 4
