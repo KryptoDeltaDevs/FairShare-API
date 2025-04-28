@@ -7,12 +7,15 @@ module FairShare
   # Group detail
   class Group < Sequel::Model
     plugin :uuid, field: :id
-    one_to_many :group_members
-    plugin :association_dependencies, group_members: :destroy
-
+    # plugin :association_dependencies
     plugin :timestamps, update_on_create: true
     plugin :whitelist_security
+
     set_allowed_columns :name, :description
+
+    many_to_one :owner, class: 'FairShare::Account', key: :created_by
+    many_to_many :members, class: 'FairShare::Account', join_table: :group_members, left_key: :group_id,
+                           right_key: :account_id
 
     def name
       SecureDB.decrypt(name_secure)

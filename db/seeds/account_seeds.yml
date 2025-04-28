@@ -1,0 +1,7 @@
+---
+- name: Jane
+  email: jane@gmail.com
+  password: jane123
+- name: Doe
+  email: doe@gmail.com
+  password: doe123

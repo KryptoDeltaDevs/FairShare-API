@@ -8,31 +8,33 @@ describe 'Test GroupMember Handling' do
   before do
     wipe_database
 
+    DATA[:accounts].each { |account_data| FairShare::Account.create(account_data) }
+
+    @owner = FairShare::Account.all[0]
+    @member = FairShare::Account.all[1]
+
     DATA[:groups].each do |group_data|
-      user_id = 1
+      account_id = @owner.id
       new_group = FairShare::Group.new(group_data)
-      new_group.created_by = user_id
+      new_group.created_by = account_id
       new_group.save_changes
 
-      FairShare::GroupMember.create(group_id: new_group.id, user_id: user_id, role: 'owner')
+      FairShare::GroupMember.create(group_id: new_group.id, account_id: account_id, role: 'owner')
     end
   end
 
   describe 'Getting Group Members' do
     it 'HAPPY: should be able to get list of all group members' do
       group = FairShare::Group.first
-      DATA[:group_members].each do |data|
-        data['group_id'] = group.id
-        FairShare::GroupMember.create(data)
-      end
+      FairShare::GroupMember.create(group_id: group.id, account_id: @member.id, role: 'member')
 
-      req_header = { 'X-User-ID' => '1' }
+      req_header = { 'X-User-ID' => @member.id }
       get "/api/v1/groups/#{group.id}/members", {}, req_header
 
       _(last_response.status).must_equal 200
 
       result = JSON.parse last_response.body
-      _(result.size).must_equal DATA[:group_members].size + 1
+      _(result.size).must_equal DATA[:accounts].size
     end
 
     it 'SAD: should block unauthorized user from viewing members' do
@@ -45,9 +47,9 @@ describe 'Test GroupMember Handling' do
 
   describe 'Creating Group Members' do
     before do
-      @req_header = { 'CONTENT_TYPE' => 'application/json', 'X-User-ID' => '1' }
+      @req_header = { 'CONTENT_TYPE' => 'application/json', 'X-User-ID' => @owner.id }
       @group = FairShare::Group.first
-      @member_data = DATA[:group_members][0]
+      @member_data = { group_id: @group.id, account_id: @member.id, role: 'member' }
     end
 
     it 'HAPPY: should be able to add a member (non-owner not allowed)' do

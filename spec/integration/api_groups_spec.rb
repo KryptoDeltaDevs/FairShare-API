@@ -10,17 +10,19 @@ describe 'Test Group Handling' do
   end
 
   describe 'Getting groups' do
+    before do
+      @account = FairShare::Account.create(DATA[:accounts][0])
+    end
     it 'HAPPY: should be able to get list of all groups for a user' do
       DATA[:groups].each do |group_data|
-        user_id = 1
+        account_id = @account.id
         new_group = FairShare::Group.new(group_data)
-        new_group.created_by = user_id
+        new_group.created_by = account_id
         new_group.save_changes
-
-        FairShare::GroupMember.create(group_id: new_group.id, user_id: user_id, role: 'owner')
+        FairShare::GroupMember.create(group_id: new_group.id, account_id: account_id, role: 'owner')
       end
 
-      req_header = { 'X-User-ID' => '1' }
+      req_header = { 'X-User-ID' => @account.id }
       get 'api/v1/groups', {}, req_header
       _(last_response.status).must_equal 200
 
@@ -29,13 +31,13 @@ describe 'Test Group Handling' do
     end
 
     it 'HAPPY: should be able to get details of a single group' do
-      user_id = 1
+      account_id = @account.id
       group = FairShare::Group.new(DATA[:groups][0])
-      group.created_by = user_id
+      group.created_by = account_id
       group.save_changes
-      FairShare::GroupMember.create(group_id: group.id, user_id: user_id, role: 'owner')
+      FairShare::GroupMember.create(group_id: group.id, account_id: account_id, role: 'owner')
 
-      req_header = { 'X-User-ID' => '1' }
+      req_header = { 'X-User-ID' => @account.id }
       get "/api/v1/groups/#{group.id}", {}, req_header
       _(last_response.status).must_equal 200
 
@@ -64,7 +66,8 @@ describe 'Test Group Handling' do
 
   describe 'Creating New Groups' do
     before do
-      @req_header = { 'CONTENT_TYPE' => 'application/json', 'X-User-ID' => '1' }
+      @account = FairShare::Account.create(DATA[:accounts][0])
+      @req_header = { 'CONTENT_TYPE' => 'application/json', 'X-User-ID' => @account.id }
       @group_data = DATA[:groups][0]
     end
 
