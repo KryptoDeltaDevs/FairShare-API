@@ -2,7 +2,6 @@
 
 require 'roda'
 require_relative 'app'
-require_relative '../services/authenticate_account'
 
 module FairShare
   # Web controller for FairShare API
