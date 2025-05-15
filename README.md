@@ -13,24 +13,52 @@ All routes return Json
 
 ## Install
 
-Install this API by cloning the _relevant branch_ and installing required gems from `Gemfile.lock`:
+Install this API by cloning the _relevant branch_ and use bundler to install specified gems from `Gemfile.lock`:
 
 ```shell
 bundle install
 ```
 
-## Test
-
-Run the test script:
+Setup development database once:
 
 ```shell
-ruby spec/api_spec.rb
+rake db:migrate
+```
+
+## Test
+
+Setup test database once:
+
+```shell
+RACK_ENV=test rake db:migrate
+```
+
+Run the test specification script in `Rakefile`:
+
+```shell
+ruby spec
+```
+
+## Develop/Debug
+
+Add fake data to the development database to work on this project:
+
+```shell
+rake db:seed
 ```
 
 ## Execute
 
-Run this API using:
+Launc this API using:
 
 ```shell
 puma
+```
+
+## Release check
+
+Before submitting pull requests, please check if specs, style, and dependency audits pass (will need to be online to update dependency database):
+
+```shell
+rake release_check
 ```

@@ -9,4 +9,3 @@ module FairShare
     end
   end
 end
-  
