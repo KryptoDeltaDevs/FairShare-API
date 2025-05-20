@@ -20,10 +20,10 @@ describe 'Test Authentication Routes' do
       credentials = { email: @account_data['email'], password: @account_data['password'] }
       post 'api/v1/auth/authenticate', credentials.to_json, @req_header
 
-      auth_account = JSON.parse(last_response.body)['data']['attributes']
+      account = JSON.parse(last_response.body)['attributes']['account']['attributes']
       _(last_response.status).must_equal 200
-      _(auth_account['name']).must_equal(@account_data['name'])
-      _(auth_account['email']).must_equal(@account_data['email'])
+      _(account['name']).must_equal(@account_data['name'])
+      _(account['email']).must_equal(@account_data['email'])
     end
 
     it 'BAD: should not authenticate invalid password' do

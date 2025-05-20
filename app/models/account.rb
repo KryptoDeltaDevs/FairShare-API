@@ -32,15 +32,13 @@ module FairShare
     def to_json(options = {}) # rubocop:disable Metrics/MethodLength
       JSON(
         {
-          data: {
-            type: 'account',
-            attributes: {
-              id:,
-              name:,
-              email:,
-              created_at:,
-              updated_at:
-            }
+          type: 'account',
+          attributes: {
+            id:,
+            name:,
+            email:,
+            created_at:,
+            updated_at:
           }
         }, options
       )

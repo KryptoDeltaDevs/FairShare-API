@@ -18,11 +18,11 @@ describe 'Test Account Handling' do
       _(last_response.status).must_equal 200
 
       result = JSON.parse last_response.body
-      _(result['data']['attributes']['id']).must_equal account.id
-      _(result['data']['attributes']['name']).must_equal account.name
-      _(result['data']['attributes']['salt']).must_be_nil
-      _(result['data']['attributes']['password']).must_be_nil
-      _(result['data']['attributes']['password_hash']).must_be_nil
+      _(result['attributes']['id']).must_equal account.id
+      _(result['attributes']['name']).must_equal account.name
+      _(result['attributes']['salt']).must_be_nil
+      _(result['attributes']['password']).must_be_nil
+      _(result['attributes']['password_hash']).must_be_nil
     end
   end
 
@@ -40,9 +40,9 @@ describe 'Test Account Handling' do
       created = JSON.parse(last_response.body)['data']
       account = FairShare::Account.first
 
-      _(created['data']['attributes']['id']).must_equal account.id
-      _(created['data']['attributes']['name']).must_equal @account_data['name']
-      _(created['data']['attributes']['email']).must_equal @account_data['email']
+      _(created['attributes']['id']).must_equal account.id
+      _(created['attributes']['name']).must_equal @account_data['name']
+      _(created['attributes']['email']).must_equal @account_data['email']
       _(account.password?(@account_data['password'])).must_equal true
       _(account.password?('not_really_the_password')).must_equal false
     end

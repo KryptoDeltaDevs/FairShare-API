@@ -4,7 +4,7 @@ require 'roda'
 require 'figaro'
 require 'logger'
 require 'sequel'
-require_relative '../app/lib/secure_db'
+require_app('lib')
 
 module FairShare
   # Config
@@ -24,6 +24,7 @@ module FairShare
       def self.DB = DB # rubocop:disable Naming/MethodName
 
       SecureDB.setup(ENV.delete('DB_KEY'))
+      AuthToken.setup(ENV.fetch('MSG_KEY'))
 
       LOGGER = Logger.new($stderr) # rubocop:disable Lint/ConstantDefinitionInBlock
       def self.logger = LOGGER
