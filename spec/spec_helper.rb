@@ -14,8 +14,16 @@ def wipe_database
   FairShare::GroupMember.map(&:destroy)
 end
 
+def auth_header(account_data)
+  auth = FairShare::AuthenticateAccount.call(
+    email: account_data['email'],
+    password: account_data['password']
+  )
+
+  "Bearer #{auth[:attributes][:auth_token]}"
+end
+
 DATA = {
-  accounts: YAML.safe_load_file('db/seeds/account_seeds.yml'),
-  groups: YAML.safe_load_file('db/seeds/group_seeds.yml'),
-  group_members: YAML.safe_load_file('db/seeds/group_member_seeds.yml')
+  accounts: YAML.safe_load_file('db/seeds/accounts_seed.yml'),
+  groups: YAML.safe_load_file('db/seeds/groups_seed.yml')
 }.freeze

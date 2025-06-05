@@ -1,0 +1,7 @@
+---
+- name: "Lunch at the pier"
+  description: "Lunch at the pier"
+  total_amount: 60.0
+- name: "Gas money"
+  description: "Lunch at the pier"
+  total_amount: 40.0

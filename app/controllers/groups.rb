@@ -8,69 +8,69 @@ module FairShare
   class Api < Roda
     # rubocop:disable Metrics/BlockLength
     route('groups') do |routing|
+      routing.halt(403, UNAUTH_MSG) unless @auth_account
+
       @group_route = "#{@api_root}/groups"
 
       routing.on String do |group_id|
-        routing.on 'members' do
-          @group_member_route = "#{@api_root}/groups/#{group_id}/members"
+        # routing.on 'members' do
+        #   @group_member_route = "#{@api_root}/groups/#{group_id}/members"
 
-          # GET api/v1/groups/[group_id]/members
-          routing.get do
-            account_id = routing.env['X-User-ID']
+        # GET api/v1/groups/[group_id]/members
+        # routing.get do
+        #   account_id = routing.env['X-User-ID']
 
-            group_member = GroupMember.where(group_id: group_id, account_id: account_id).first
-            raise 'Not authorized to view group members' unless group_member
+        #   group_member = GroupMember.where(group_id: group_id, account_id: account_id).first
+        #   raise 'Not authorized to view group members' unless group_member
 
-            members = GroupMember.where(group_id: group_id).all
+        #   members = GroupMember.where(group_id: group_id).all
 
-            JSON.pretty_generate(members)
-          rescue StandardError => e
-            routing.halt 404, { message: e.message }.to_json
-          end
+        #   JSON.pretty_generate(members)
+        # rescue StandardError => e
+        #   routing.halt 404, { message: e.message }.to_json
+        # end
 
-          # POST api/v1/groups/[group_id]/members
-          routing.post do
-            account_id = routing.env['X-User-ID']
+        # POST api/v1/groups/[group_id]/members
+        # routing.post do
+        #   account_id = routing.env['X-User-ID']
 
-            group_member = GroupMember.where(group_id: group_id, account_id: account_id).first
+        #   group_member = GroupMember.where(group_id: group_id, account_id: account_id).first
 
-            raise 'Not authorized to add members' unless group_member && group_member.role == 'owner'
+        #   raise 'Not authorized to add members' unless group_member && group_member.role == 'owner'
 
-            new_data = HttpRequest.new(routing).body_data
+        #   new_data = HttpRequest.new(routing).body_data
 
-            raise 'Cannot assign owner role' if new_data['role'] == 'owner'
+        #   raise 'Cannot assign owner role' if new_data['role'] == 'owner'
 
-            new_data['group_id'] = group_id
+        #   new_data['group_id'] = group_id
 
-            new_group_member = GroupMember.new(new_data)
+        #   new_group_member = GroupMember.new(new_data)
 
-            raise 'Invalid group member' unless new_group_member.save_changes
+        #   raise 'Invalid group member' unless new_group_member.save_changes
 
-            response.status = 201
-            response['Location'] = "#{@group_member_route}/#{new_group_member.id}"
-            { message: 'Group Member saved', data: new_group_member }.to_json
-          rescue Sequel::MassAssignmentRestriction
-            Api.logger.warn "MASS-ASSIGNMENT: #{new_data.keys}"
-            routing.halt 400, { message: 'Illegal Attributes' }.to_json
-          rescue StandardError => e
-            routing.halt 500, { message: e.message }.to_json
-          end
-        end
+        #   response.status = 201
+        #   response['Location'] = "#{@group_member_route}/#{new_group_member.id}"
+        #   { message: 'Group Member saved', data: new_group_member }.to_json
+        # rescue Sequel::MassAssignmentRestriction
+        #   Api.logger.warn "MASS-ASSIGNMENT: #{new_data.keys}"
+        #   routing.halt 400, { message: 'Illegal Attributes' }.to_json
+        # rescue StandardError => e
+        #   routing.halt 500, { message: e.message }.to_json
+        # end
+        # end
 
         # GET api/v1/groups/[group_id]
         routing.get do
-          account_id = routing.env['X-User-ID']
-          group_member = GroupMember.where(account_id: account_id, group_id: group_id).first
+          group = GetGroupQuery.call(account: @auth_account, group_id:)
 
-          raise 'User not authorized to view this group' unless group_member
-
-          group = Group.first(id: group_id)
-
-          raise 'Group not found' unless group
-
-          group.to_json
-        rescue StandardError => e
+          { data: group }.to_json
+        rescue GetGroupQuery::ForbiddenError => e
+          routing.halt 403, { message: e.message }.to_json
+        rescue GetGroupQuery::NotFoundError => e
           routing.halt 404, { message: e.message }.to_json
+        rescue StandardError => e
+          puts "FIND GROUP ERROR: #{e.inspect}"
+          routing.halt 500, { message: 'API server error' }.to_json
         end
 
         # DELETE api/v1/groups/[group_id]
@@ -95,8 +95,8 @@ module FairShare
 
       # GET api/v1/groups
       routing.get do
-        account_id = routing.env['X-User-ID']
-        groups = GroupMember.where(account_id: account_id).map(&:group)
+        groups = GroupPolicy::AccountScope.new(@auth_account).viewable
+
         JSON.pretty_generate(groups)
       rescue StandardError
         routing.halt 404, { message: 'Could not find groups' }.to_json

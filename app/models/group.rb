@@ -16,6 +16,8 @@ module FairShare
     many_to_one :owner, class: 'FairShare::Account', key: :created_by
     many_to_many :members, class: 'FairShare::Account', join_table: :group_members, left_key: :group_id,
                            right_key: :account_id
+    one_to_many :expenses
+    one_to_many :payments
 
     def name
       SecureDB.decrypt(name_secure)
@@ -33,20 +35,38 @@ module FairShare
       self.description_secure = SecureDB.encrypt(plaintext)
     end
 
-    def to_json(options = {}) # rubocop:disable Metrics/MethodLength
-      JSON(
-        {
-          type: 'group',
-          attributes: {
-            id:,
-            name:,
-            description:,
-            created_by:,
-            created_at:,
-            updated_at:
-          }
-        }, options
+    def expense_splits
+      expenses.flat_map(&:expense_splits)
+    end
+
+    def full_details
+      to_h.merge(
+        relationships: {
+          owner:,
+          members:,
+          expenses:,
+          payments:,
+          expense_splits: expense_splits
+        }
       )
+    end
+
+    def to_h # rubocop:disable Metrics/MethodLength
+      {
+        type: 'group',
+        attributes: {
+          id:,
+          name:,
+          description:,
+          created_by:,
+          created_at:,
+          updated_at:
+        }
+      }
+    end
+
+    def to_json(options = {})
+      JSON(to_h, options)
     end
   end
 end

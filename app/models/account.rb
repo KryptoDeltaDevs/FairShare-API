@@ -15,8 +15,16 @@ module FairShare
     set_allowed_columns :name, :email, :password
 
     one_to_many :groups, key: :created_by
-    many_to_many :member_groups, class: :'FairShare::Group', join_table: :group_members, left_key: :account_id,
+    many_to_many :member_groups, class: 'FairShare::Group', join_table: :group_members, left_key: :account_id,
                                  right_key: :group_id
+
+    one_to_many :expenses, key: :payer_id # this account paid
+    one_to_many :expense_splits # what this account owes
+    many_to_many :split_expenses, class: 'FairShare::Expense', join_table: :expense_splits, left_key: :account_id,
+                                  right_key: :expense_id # expense this account is part of
+
+    one_to_many :payments_sent, class: 'FairShare::Payment', key: :from_account_id
+    one_to_many :payments_received, class: 'FairShare::Payment',  key: :to_account_id
 
     add_association_dependencies groups: :destroy
 

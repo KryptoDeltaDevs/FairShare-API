@@ -17,8 +17,12 @@ module FairShare
       return nil unless @routing.headers['AUTHORIZATION']
 
       scheme, auth_token = @routing.headers['AUTHORIZATION'].split
+      return nil unless scheme.match?(/^Bearer$/i)
+
       payload = AuthToken.new(auth_token).payload
-      scheme.match?(/^Bearer$/i) ? payload['attributes'] : nil
+      Account.first(id: payload['attributes']['id'])
+      # token = AuthToken.new(auth_token)
+      # AuthorizedAccount.new(account, token.scope)
     end
 
     def body_data

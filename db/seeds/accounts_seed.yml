@@ -5,3 +5,6 @@
 - name: Doe
   email: doe@gmail.com
   password: doe123
+- name: John
+  email: john@gmail.com
+  password: john123

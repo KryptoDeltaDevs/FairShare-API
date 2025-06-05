@@ -13,6 +13,8 @@ module FairShare
     plugin :multi_route
     plugin :request_headers
 
+    UNAUTH_MSG = { message: 'Unauthorized Request' }.to_json
+
     route do |routing|
       response['Content-Type'] = 'application/json'
       request = HttpRequest.new(routing)
@@ -20,9 +22,13 @@ module FairShare
       request.secure? || routing.halt(403, { message: 'TLS/SSL Required' }.to_json)
 
       begin
+        # @auth = request.authorized_account
+        # @auth_account = @auth.account if @auth
         @auth_account = request.authenticated_account
       rescue AuthToken::InvalidTokenError
         routing.halt 403, { message: 'Invalid auth token' }.to_json
+      rescue AuthToken::ExpiredTokenError
+        routing.halt 403, { message: 'Expired auth token' }.to_json
       end
 
       routing.root do

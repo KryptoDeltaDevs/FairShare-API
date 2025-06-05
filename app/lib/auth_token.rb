@@ -15,8 +15,8 @@ class AuthToken
   def initialize(token)
     @token = token
     contents = AuthToken.detokenize(@token)
-    @expiration = contents[:exp]
-    @payload = contents[:payload]
+    @expiration = contents['exp']
+    @payload = contents['payload']
   end
 
   def expired?

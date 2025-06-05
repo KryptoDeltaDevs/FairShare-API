@@ -6,6 +6,7 @@ describe 'Test Account Handling' do
   include Rack::Test::Methods
 
   before do
+    header 'CONTENT_TYPE', 'application/json'
     wipe_database
   end
 
@@ -14,6 +15,7 @@ describe 'Test Account Handling' do
       account_data = DATA[:accounts][0]
       account = FairShare::Account.create(account_data)
 
+      header 'AUTHORIZATION', auth_header(account_data)
       get "/api/v1/accounts/#{account.id}"
       _(last_response.status).must_equal 200
 

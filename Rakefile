@@ -56,7 +56,7 @@ namespace :db do # rubocop:disable Metrics/BlockLength
   end
 
   task load_models: [:load] do
-    require_app(%w[lib models services])
+    require_app(%w[lib models policies services])
   end
 
   desc 'Run migrations'
@@ -89,6 +89,7 @@ namespace :db do # rubocop:disable Metrics/BlockLength
 
   desc 'Seeds the development database'
   task seed: [:load_models] do
+    require_app(%w[lib models policies services])
     require 'sequel/extensions/seed'
     Sequel::Seed.setup(:development)
     Sequel.extension :seed
