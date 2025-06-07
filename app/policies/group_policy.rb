@@ -3,41 +3,42 @@
 module FairShare
   # Policy to determine an account access to a group
   class GroupPolicy
-    def initialize(account, group)
+    def initialize(account, group, auth_scope = nil)
       @account = account
       @group = group
+      @auth_scope = auth_scope
     end
 
     def can_view?
-      account_is_owner? || account_is_member?
+      can_read? && (account_is_owner? || account_is_member?)
     end
 
     def can_edit?
-      account_is_owner?
+      can_write? && account_is_owner?
     end
 
     def can_delete?
-      account_is_owner?
+      can_write? && account_is_owner?
     end
 
     def can_leave?
-      !account_is_owner?
+      can_write? && !account_is_owner?
     end
 
     def can_add_expense?
-      FairShare::GroupMember.first(account_id: @account.id, group_id: @group.id).can_add_expense
+      can_write? && FairShare::GroupMember.first(account_id: @account.id, group_id: @group.id).can_add_expense
     end
 
     def can_add_members?
-      account_is_owner?
+      can_write? && account_is_owner?
     end
 
     def can_remove_members?
-      account_is_owner?
+      can_write? && account_is_owner?
     end
 
     def can_join_group?
-      !(account_is_owner? or account_is_member?)
+      !(account_is_owner? || account_is_member?)
     end
 
     def summary
@@ -54,6 +55,14 @@ module FairShare
     end
 
     private
+
+    def can_read?
+      @auth_scope ? @auth_scope.can_read?('groups') : false
+    end
+
+    def can_write?
+      @auth_scope ? @auth_scope.can_write?('groups') : false
+    end
 
     def account_is_owner?
       @group.owner == @account

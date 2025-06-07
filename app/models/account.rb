@@ -15,6 +15,7 @@ module FairShare
     set_allowed_columns :name, :email, :password
 
     one_to_many :groups, key: :created_by
+    one_to_many :group_members
     many_to_many :member_groups, class: 'FairShare::Group', join_table: :group_members, left_key: :account_id,
                                  right_key: :group_id
 
@@ -27,6 +28,10 @@ module FairShare
     one_to_many :payments_received, class: 'FairShare::Payment',  key: :to_account_id
 
     add_association_dependencies groups: :destroy
+
+    def self.create_github_account(gh_account)
+      create(name: gh_account[:name], email: gh_account[:email])
+    end
 
     def password=(new_password)
       self.password_digest = Password.digest(new_password)

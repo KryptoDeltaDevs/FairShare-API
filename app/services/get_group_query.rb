@@ -17,11 +17,11 @@ module FairShare
       end
     end
 
-    def self.call(account:, group_id:)
+    def self.call(auth:, group_id:)
       group = Group.first(id: group_id)
       raise NotFoundError unless group
 
-      policy = GroupPolicy.new(account, group)
+      policy = GroupPolicy.new(auth.account, group, auth.scope)
       raise ForbiddenError unless policy.can_view?
 
       group.full_details.merge(policies: policy.summary)

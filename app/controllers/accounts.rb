@@ -19,7 +19,7 @@ module FairShare
         rescue AuthorizeAccount::ForbiddenError => e
           routing.halt 404, { message: e.message }.to_json
         rescue StandardError => e
-          puts "GET ACCOUNT ERROR: #{e.inspect}"
+          Api.logger.error "GET ACCOUNT ERROR: #{e.inspect}"
           routing.halt 500, { message: 'API Server Error' }.to_json
         end
       end

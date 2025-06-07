@@ -9,7 +9,7 @@ Sequel.migration do
 
       String :name, null: false
       String :email, null: false, unique: true
-      String :password_digest, null: false
+      String :password_digest, null: true
 
       DateTime :created_at, null: false
       DateTime :updated_at, null: false

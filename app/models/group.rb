@@ -16,6 +16,7 @@ module FairShare
     many_to_one :owner, class: 'FairShare::Account', key: :created_by
     many_to_many :members, class: 'FairShare::Account', join_table: :group_members, left_key: :group_id,
                            right_key: :account_id
+    one_to_many :group_members
     one_to_many :expenses
     one_to_many :payments
 

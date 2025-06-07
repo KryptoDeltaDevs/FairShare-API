@@ -3,6 +3,7 @@
 require 'json'
 
 module FairShare
+  # An authorized account includes auth_token and scope
   class AuthorizedAccount
     attr_reader :account, :scope
 

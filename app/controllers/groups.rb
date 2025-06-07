@@ -44,8 +44,7 @@ module FairShare
             # POST api/v1/groups/[group_id]/members
             routing.post do
               data = HttpRequest.new(routing).body_data
-              account = Account.first(email: data[:email])
-              GroupMember.create(group_id:, account_id: account.id, role: 'member', can_add_expense: false)
+              AddMember.call(email: data[:email], group_id:)
               response.status = 201
               { message: 'A member added to a group' }.to_json
             rescue StandardError => e
@@ -61,7 +60,7 @@ module FairShare
 
             routing.halt 409 if data[:target_email] == @auth_account.email
 
-            group = GetGroupQuery.call(account: @auth_account, group_id:)
+            group = GetGroupQuery.call(auth: @auth, group_id:)
 
             routing.halt 403 unless group[:attributes][:created_by] == @auth_account.id
 
@@ -71,13 +70,13 @@ module FairShare
 
             { message: 'Invitation sent' }.to_json
           rescue StandardError => e
-            puts "#{e.inspect}\n#{e.backtrace}"
+            Api.logger.error "#{e.inspect}\n#{e.backtrace}"
           end
         end
 
         # GET api/v1/groups/[group_id]
         routing.get do
-          group = GetGroupQuery.call(account: @auth_account, group_id:)
+          group = GetGroupQuery.call(auth: @auth, group_id:)
 
           { data: group }.to_json
         rescue GetGroupQuery::ForbiddenError => e
@@ -85,52 +84,25 @@ module FairShare
         rescue GetGroupQuery::NotFoundError => e
           routing.halt 404, { message: e.message }.to_json
         rescue StandardError => e
-          puts "FIND GROUP ERROR: #{e.inspect}"
+          Api.logger.error "FIND GROUP ERROR: #{e.inspect}"
           routing.halt 500, { message: 'API server error' }.to_json
         end
 
         # PUT api/v1/groups/[group_id]
         routing.put do
           update_data = HttpRequest.new(routing).body_data
-          group = Group.first(id: group_id)
-
-          routing.halt 404, { message: 'Group not found' }.to_json unless group
-
-          group_member = GroupMember.where(group_id: group_id, account_id: @auth_account.id).first
-          routing.halt 403, { message: 'Not authorized to update group' }.to_json unless group_member&.role == 'owner'
-          allowed_fields = %i[name description]
-          group.set_fields(update_data, allowed_fields, missing: :skip)
-
-          if group.save_changes
-            response.status = 200
-            { message: 'Group updated successfully', data: group }.to_json
-          else
-            routing.halt 400, { message: 'Failed to update group' }.to_json
-          end
+          UpdateGroup.call(auth: @auth, update_data:, group_id:)
+          response.status = 200
+          { message: 'Updated successfully ' }.to_json
+        rescue UpdateGroup::NotFoundError => e
+          routing.halt 404, { message: e.message }.to_json
+        rescue UpdateGroup::ForbiddenError => e
+          routing.halt 403, { message: e.message }.to_json
         rescue Sequel::MassAssignmentRestriction
           Api.logger.warn "MASS-ASSIGNMENT: #{update_data.keys}"
           routing.halt 400, { message: 'Illegal attributes in request' }.to_json
         rescue StandardError => e
           routing.halt 500, { message: "Server error: #{e.message}" }.to_json
-        end
-
-        # DELETE api/v1/groups/[group_id]
-        routing.delete do
-          account_id = routing.env['X-User-ID']
-          group_member = GroupMember.where(account_id: account_id, group_id: group_id).first
-
-          raise 'User not authorized to view this group' unless group_member && group_member.role == 'owner'
-
-          group = Group.first(id: group_id)
-
-          raise 'Group not found' unless group && group.created_by == account_id
-
-          GroupMember.where(group_id: group_id).each(&:destroy)
-          group.destroy
-
-          { message: 'Group and associated group member deleted successfully' }.to_json
-        rescue StandardError => e
-          routing.halt 403, { message: e.message }.to_json
         end
       end
 
@@ -146,18 +118,7 @@ module FairShare
       # POST api/v1/groups
       routing.post do
         new_data = HttpRequest.new(routing).body_data
-        new_group = Group.new(new_data)
-        new_group.created_by = @auth_account.id
-
-        raise('Could not save group') unless new_group.save_changes
-
-        new_group_member = GroupMember.new(
-          group_id: new_group.id,
-          account_id: @auth_account.id,
-          role: 'owner'
-        )
-
-        raise('Could not save group_member') unless new_group_member.save_changes
+        new_group = CreateGroup.call(auth: @auth, group_data: new_data)
 
         response.status = 201
         response['Location'] = "#{@group_route}/#{new_group.id}"

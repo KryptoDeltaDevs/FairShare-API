@@ -22,7 +22,9 @@ module FairShare
       request.secure? || routing.halt(403, { message: 'TLS/SSL Required' }.to_json)
 
       begin
-        @auth_account = request.authenticated_account
+        # @auth_account = request.authenticated_account
+        @auth = request.authorized_account
+        @auth_account = @auth.account if @auth
       rescue AuthToken::InvalidTokenError
         routing.halt 403, { message: 'Invalid auth token' }.to_json
       rescue AuthToken::ExpiredTokenError
