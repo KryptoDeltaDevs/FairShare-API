@@ -16,11 +16,14 @@ module FairShare
           response.status = 202
           { message: 'Verification email sent' }.to_json
         rescue VerifyRegistration::InvalidRegistration => e
+          puts "#{e.inspect}\n#{e.backtrace}"
           routing.halt 400, { message: e.message }.to_json
         rescue VerifyRegistration::EmailProviderError
+          puts "#{e.inspect}\n#{e.backtrace}"
           Api.logger.error "Could not send registration email: #{e.inspect}"
           routing.halt 500, { message: 'Error sending email' }.to_json
         rescue StandardError => e
+          puts "#{e.inspect}\n#{e.backtrace}"
           Api.logger.error "Could not verify registration: #{e.inspect}"
           routing.halt 500
         end
