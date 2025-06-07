@@ -13,51 +13,69 @@ module FairShare
       @group_route = "#{@api_root}/groups"
 
       routing.on String do |group_id|
-        # routing.on 'members' do
-        #   @group_member_route = "#{@api_root}/groups/#{group_id}/members"
+        routing.on 'payments' do
+          routing.is do
+            # POST api/v1/groups/[group_id]/payments
+            routing.post do
+              data = HttpRequest.new(routing).body_data
+              puts data.inspect
+              CreatePayment.call(group_id:, from_account_id: @auth_account.id, data:)
+              response.status = 202
+              { message: 'Payment Accepted' }.to_json
+            rescue BadPayment => e
+              routing.halt 400, { message: e.message }.to_json
+            end
+          end
+        end
 
-        # GET api/v1/groups/[group_id]/members
-        # routing.get do
-        #   account_id = routing.env['X-User-ID']
+        routing.on 'expenses' do
+          routing.is do
+            # POST api/v1/groups/[group_id]/expenses
+            routing.post do
+              data = HttpRequest.new(routing).body_data
+              CreateExpense.call(group_id:, expense: data[:expense], split_expense: data[:split_expense])
+              response.status = 201
+              { message: 'Expense created' }.to_json
+            end
+          end
+        end
 
-        #   group_member = GroupMember.where(group_id: group_id, account_id: account_id).first
-        #   raise 'Not authorized to view group members' unless group_member
+        routing.on 'members' do
+          routing.is do
+            # POST api/v1/groups/[group_id]/members
+            routing.post do
+              data = HttpRequest.new(routing).body_data
+              account = Account.first(email: data[:email])
+              puts data.inspect
+              GroupMember.create(group_id:, account_id: account.id, role: 'member', can_add_expense: false)
+              response.status = 201
+              { message: 'A member added to a group' }.to_json
+            rescue StandardError => e
+              routing.halt 400, { message: e.message }.to_json
+            end
+          end
+        end
 
-        #   members = GroupMember.where(group_id: group_id).all
+        routing.on 'send_invitation' do
+          # POST api/v1/groups/[group_id]/send_invitation
+          routing.post do
+            data = HttpRequest.new(routing).body_data
 
-        #   JSON.pretty_generate(members)
-        # rescue StandardError => e
-        #   routing.halt 404, { message: e.message }.to_json
-        # end
+            routing.halt 409 if data[:target_email] == @auth_account.email
 
-        # POST api/v1/groups/[group_id]/members
-        # routing.post do
-        #   account_id = routing.env['X-User-ID']
+            group = GetGroupQuery.call(account: @auth_account, group_id:)
 
-        #   group_member = GroupMember.where(group_id: group_id, account_id: account_id).first
+            routing.halt 403 unless group[:attributes][:created_by] == @auth_account.id
 
-        #   raise 'Not authorized to add members' unless group_member && group_member.role == 'owner'
+            SendInvitation.new(data, group[:attributes][:name], @auth_account.name).call
 
-        #   new_data = HttpRequest.new(routing).body_data
+            response.status = 200
 
-        #   raise 'Cannot assign owner role' if new_data['role'] == 'owner'
-
-        #   new_data['group_id'] = group_id
-
-        #   new_group_member = GroupMember.new(new_data)
-
-        #   raise 'Invalid group member' unless new_group_member.save_changes
-
-        #   response.status = 201
-        #   response['Location'] = "#{@group_member_route}/#{new_group_member.id}"
-        #   { message: 'Group Member saved', data: new_group_member }.to_json
-        # rescue Sequel::MassAssignmentRestriction
-        #   Api.logger.warn "MASS-ASSIGNMENT: #{new_data.keys}"
-        #   routing.halt 400, { message: 'Illegal Attributes' }.to_json
-        # rescue StandardError => e
-        #   routing.halt 500, { message: e.message }.to_json
-        # end
-        # end
+            { message: 'Invitation sent' }.to_json
+          rescue StandardError => e
+            puts "#{e.inspect}\n#{e.backtrace}"
+          end
+        end
 
         # GET api/v1/groups/[group_id]
         routing.get do
@@ -71,6 +89,31 @@ module FairShare
         rescue StandardError => e
           puts "FIND GROUP ERROR: #{e.inspect}"
           routing.halt 500, { message: 'API server error' }.to_json
+        end
+
+        # PUT api/v1/groups/[group_id]
+        routing.put do
+          update_data = HttpRequest.new(routing).body_data
+          group = Group.first(id: group_id)
+
+          routing.halt 404, { message: 'Group not found' }.to_json unless group
+
+          group_member = GroupMember.where(group_id: group_id, account_id: @auth_account.id).first
+          routing.halt 403, { message: 'Not authorized to update group' }.to_json unless group_member&.role == 'owner'
+          allowed_fields = %i[name description]
+          group.set_fields(update_data, allowed_fields, missing: :skip)
+
+          if group.save_changes
+            response.status = 200
+            { message: 'Group updated successfully', data: group }.to_json
+          else
+            routing.halt 400, { message: 'Failed to update group' }.to_json
+          end
+        rescue Sequel::MassAssignmentRestriction
+          Api.logger.warn "MASS-ASSIGNMENT: #{update_data.keys}"
+          routing.halt 400, { message: 'Illegal attributes in request' }.to_json
+        rescue StandardError => e
+          routing.halt 500, { message: "Server error: #{e.message}" }.to_json
         end
 
         # DELETE api/v1/groups/[group_id]
@@ -104,16 +147,16 @@ module FairShare
 
       # POST api/v1/groups
       routing.post do
-        account_id = routing.env['X-User-ID']
         new_data = HttpRequest.new(routing).body_data
         new_group = Group.new(new_data)
-        new_group.created_by = account_id
+        puts @auth_account.inspect
+        new_group.created_by = @auth_account.id
 
         raise('Could not save group') unless new_group.save_changes
 
         new_group_member = GroupMember.new(
           group_id: new_group.id,
-          account_id: account_id,
+          account_id: @auth_account.id,
           role: 'owner'
         )
 

@@ -4,12 +4,14 @@ require 'http'
 
 module FairShare
   # Send email verfification email
-  class VerifyRegistration
+  class SendInvitation
     class InvalidRegistration < StandardError; end
     class EmailProviderError < StandardError; end
 
-    def initialize(registration)
-      @registration = registration
+    def initialize(data, group_name, inviter_name)
+      @data = data
+      @group_name = group_name
+      @inviter_name = inviter_name
     end
 
     def mj_apikey_public = ENV.fetch('MJ_APIKEY_PUBLIC')
@@ -18,19 +20,20 @@ module FairShare
     def mj_from_email = ENV.fetch('MJ_FROM_EMAIL')
 
     def call
-      raise(InvalidRegistration, 'Email exists') unless email_available?
+      raise(InvalidRegistration, 'Email not exists') if email_unavailable?
 
       send_email_verification
     end
 
-    def email_available?
-      Account.first(email: @registration[:email]).nil?
+    def email_unavailable?
+      Account.first(email: @data[:target_email]).nil?
     end
 
     def html_email
       <<~END_EMAIL
-        <h1>FairShare App Registration Received</h1>
-        <p>Please <a href="#{@registration[:verification_url]}">Click here</a> to validate your email. You will be asked to set your name and a password to activate your account.</p>
+        <h1>FairShare App Group Invitation</h1>
+        <h2>You've been invited to #{@name} by #{@inviter_name}</h2
+        <p>Click <a href="#{@data[:invitation_url]}">here</a> to accept the group invitation.</p>
       END_EMAIL
     end
 
@@ -44,11 +47,10 @@ module FairShare
             },
             To: [
               {
-                Email: @registration[:email],
-                Name: @registration[:name] || 'New User'
+                Email: @data[:target_email]
               }
             ],
-            Subject: 'FairShare Registration Verification',
+            Subject: 'FairShare Group Invitation',
             HTMLPart: html_email
           }
         ]

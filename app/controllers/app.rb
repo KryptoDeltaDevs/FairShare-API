@@ -22,8 +22,6 @@ module FairShare
       request.secure? || routing.halt(403, { message: 'TLS/SSL Required' }.to_json)
 
       begin
-        # @auth = request.authorized_account
-        # @auth_account = @auth.account if @auth
         @auth_account = request.authenticated_account
       rescue AuthToken::InvalidTokenError
         routing.halt 403, { message: 'Invalid auth token' }.to_json

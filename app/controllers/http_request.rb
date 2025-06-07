@@ -21,8 +21,6 @@ module FairShare
 
       payload = AuthToken.new(auth_token).payload
       Account.first(id: payload['attributes']['id'])
-      # token = AuthToken.new(auth_token)
-      # AuthorizedAccount.new(account, token.scope)
     end
 
     def body_data
