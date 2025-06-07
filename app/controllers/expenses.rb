@@ -21,8 +21,7 @@ module FairShare
                                                 payments_received: expenses[:payments_received])
 
         { data: { owed_to_others:, owed_by_others: } }.to_json
-      rescue StandardError => e
-        puts "Error: #{e.inspect}"
+      rescue StandardError
         routing.halt 500, { message: 'API server error' }.to_json
       end
     end

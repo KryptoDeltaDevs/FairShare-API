@@ -18,7 +18,6 @@ module FairShare
             # POST api/v1/groups/[group_id]/payments
             routing.post do
               data = HttpRequest.new(routing).body_data
-              puts data.inspect
               CreatePayment.call(group_id:, from_account_id: @auth_account.id, data:)
               response.status = 202
               { message: 'Payment Accepted' }.to_json
@@ -46,7 +45,6 @@ module FairShare
             routing.post do
               data = HttpRequest.new(routing).body_data
               account = Account.first(email: data[:email])
-              puts data.inspect
               GroupMember.create(group_id:, account_id: account.id, role: 'member', can_add_expense: false)
               response.status = 201
               { message: 'A member added to a group' }.to_json
@@ -149,7 +147,6 @@ module FairShare
       routing.post do
         new_data = HttpRequest.new(routing).body_data
         new_group = Group.new(new_data)
-        puts @auth_account.inspect
         new_group.created_by = @auth_account.id
 
         raise('Could not save group') unless new_group.save_changes
