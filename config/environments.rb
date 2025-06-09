@@ -23,8 +23,10 @@ module FairShare
       DB = Sequel.connect("#{db_url}?encoding=utf8") # rubocop:disable Lint/ConstantDefinitionInBlock
       def self.DB = DB # rubocop:disable Naming/MethodName
 
+      # Load crypto keys
       SecureDB.setup(ENV.delete('DB_KEY'))
       AuthToken.setup(ENV.fetch('MSG_KEY'))
+      SignedRequest.setup(ENV.delete('VERIFY_KEY'), ENV.delete('SIGNING_KEY'))
 
       LOGGER = Logger.new($stderr) # rubocop:disable Lint/ConstantDefinitionInBlock
       def self.logger = LOGGER
