@@ -50,6 +50,14 @@ module FairShare
             rescue StandardError => e
               routing.halt 400, { message: e.message }.to_json
             end
+
+            # PUT api/v1/groups/[group_id]/members
+            routing.put do
+              group_members = HttpRequest.new(routing).body_data
+              UpdateAccess.call(group_members:, group_id:)
+              response.status = 200
+              { message: 'Update accesses' }.to_json
+            end
           end
         end
 

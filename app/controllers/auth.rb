@@ -6,7 +6,7 @@ require_relative 'app'
 module FairShare
   # Web controller for FairShare API
   class Api < Roda
-    route('auth') do |routing|
+    route('auth') do |routing| # rubocop:disable Metrics/BlockLength
       # All requests in this route require signed requests
       begin
         @request_data = HttpRequest.new(routing).signed_body_data

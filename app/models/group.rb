@@ -45,6 +45,7 @@ module FairShare
         relationships: {
           owner:,
           members:,
+          group_members:,
           expenses:,
           payments:,
           expense_splits: expense_splits

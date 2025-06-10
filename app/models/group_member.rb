@@ -25,6 +25,7 @@ module FairShare
             group_id:,
             account_id:,
             role:,
+            can_add_expense:,
             created_at:,
             updated_at:
           }

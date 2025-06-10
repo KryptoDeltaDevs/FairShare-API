@@ -25,7 +25,7 @@ module FairShare
 
       # Load crypto keys
       SecureDB.setup(ENV.delete('DB_KEY'))
-      AuthToken.setup(ENV.fetch('MSG_KEY'))
+      AuthToken.setup(ENV.delete('MSG_KEY'))
       SignedRequest.setup(ENV.delete('VERIFY_KEY'), ENV.delete('SIGNING_KEY'))
 
       LOGGER = Logger.new($stderr) # rubocop:disable Lint/ConstantDefinitionInBlock

@@ -35,7 +35,7 @@ module FairShare
       rescue Sequel::MassAssignmentRestriction
         Api.logger.warn "MASS-ASSIGNMENT:: #{account_data.keys}"
         routing.halt 400, { message: 'Illegal Attributes' }.to_json
-      rescue SignedRequest::VerificationErrorAdd commentMore actions
+      rescue SignedRequest::VerificationError
         routing.halt 403, { message: 'Must sign request' }.to_json
       rescue StandardError
         Api.logger.error 'Unknown error saving account'

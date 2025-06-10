@@ -1,8 +1,8 @@
 # frozen_string_literal: true
 
 module FairShare
-  # Update Group Info
-  class UpdateGroup
+  # Update Member Access
+  class UpdateAccess
     # No access to resource
     class ForbiddenError < StandardError
       def message
@@ -17,15 +17,12 @@ module FairShare
       end
     end
 
-    def self.call(auth:, update_data:, group_id:)
-      raise ForbiddenError unless auth.scope.can_write?('groups')
+    def self.call(group_members:, group_id:)
+      group_members.each do |group_member|
+        member = GroupMember.first(group_id:, account_id: group_member[:account_id])
 
-      group = Group.first(id: group_id)
-      raise NotFoundError if group.nil?
-
-      raise ForbiddenError if auth.account.id != group.created_by
-
-      group.update(update_data)
+        member.update(can_add_expense: !group_member[:can_add_expense])
+      end
     end
   end
 end
